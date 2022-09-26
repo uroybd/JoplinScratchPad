@@ -1,6 +1,6 @@
 {
   "name": "joplin-scratchpad",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -32,7 +32,7 @@
     "eslint-plugin-vue": "^8.0.3",
     "node-sass": "^7.0.3",
     "sass-loader": "^13.0.2",
-    "vue-cli-plugin-electron-builder": "~2.1.1",
+    "vue-cli-plugin-electron-builder": "^2.1.1",
     "vue-template-compiler": "^2.6.14"
   },
   "eslintConfig": {
@@ -48,6 +48,9 @@
       "parser": "@babel/eslint-parser"
     },
     "rules": {}
+  },
+  "resolutions": {
+    "vue-cli-plugin-electron-builder/electron-builder": "^23.0.6"
   },
   "browserslist": [
     "> 1%",
