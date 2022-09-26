@@ -63,7 +63,9 @@ export async function getScratchPadTag(config) {
     return null;
   }
   // console.log(config);
-  const url = `http://${config.host}:${config.port}/search/?token=${config.apiToken}&query=scratchpad&type=tag`;
+  const url = `${getBaseURL(config)}/search/?token=${
+    config.apiToken
+  }&query=scratchpad&type=tag`;
   try {
     const { data } = await axios.get(url);
     if (data.items.length) {
@@ -71,7 +73,7 @@ export async function getScratchPadTag(config) {
     } else {
       try {
         const resp = await axios.post(
-          `http://${config.host}:${config.port}/tags/?token=${config.apiToken}`,
+          `${getBaseURL(config)}/tags/?token=${config.apiToken}`,
           { title: "scratchpad" }
         );
         return resp.data.id;
@@ -89,7 +91,7 @@ export async function createOrUpdateScratchPad(data, nblabel, config, tag) {
   if (!validateConfig(config) || config.notebook == null) {
     return null;
   }
-  let url = `http://${config.host}:${config.port}/notes/${
+  let url = `${getBaseURL(config)}/notes/${
     data.id !== null ? "" + data.id + "/" : ""
   }?token=${config.apiToken}`;
   let method = axios.put;
@@ -104,7 +106,7 @@ export async function createOrUpdateScratchPad(data, nblabel, config, tag) {
       data.id = null;
       method = axios.post;
       payload.title = getNoteLabel();
-      url = `http://${config.host}:${config.port}/notes/${
+      url = `${getBaseURL(config)}/notes/${
         data.id !== null ? "" + data.id + "/" : ""
       }?token=${config.apiToken}`;
       // console.log(data, nblabel, config, tag);
@@ -112,7 +114,7 @@ export async function createOrUpdateScratchPad(data, nblabel, config, tag) {
   }
   const response = await method(url, payload);
   await axios.post(
-    `http://${config.host}:${config.port}/tags/${tag}/notes/?token=${config.apiToken}`,
+    `${getBaseURL(config)}/tags/${tag}/notes/?token=${config.apiToken}`,
     { id: response.data.id }
   );
   return {
