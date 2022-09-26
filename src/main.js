@@ -1,8 +1,15 @@
-import Vue from 'vue'
-import App from './App.vue'
+import Vue from "vue";
+import MarkdownEditor from "v-markdown-editor";
+import "v-markdown-editor/dist/v-markdown-editor.css";
 
-Vue.config.productionTip = false
+Vue.use(MarkdownEditor);
+
+import App from "./App.vue";
+import { store } from "./store";
+
+Vue.config.productionTip = false;
 
 new Vue({
-  render: h => h(App),
-}).$mount('#app')
+  render: (h) => h(App),
+  store: store,
+}).$mount("#app");
