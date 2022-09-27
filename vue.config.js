@@ -12,7 +12,7 @@ module.exports = defineConfig({
           target: [
             {
               target: "AppImage",
-              arch: ["x64", "ia32", "arm64”"],
+              arch: ["x64", "arm64"],
             },
           ],
         },
