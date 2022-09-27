@@ -32,6 +32,7 @@ async function createWindow() {
     ? path.join(__dirname, "/tray.png")
     : path.join(__dirname, "/tray/tray.png");
   const tray = new Tray(iconPath);
+
   const win = new BrowserWindow({
     width: 400,
     height: 600,
@@ -43,6 +44,7 @@ async function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     maximizable: false,
+    title: "Joplin Scratchpad",
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info

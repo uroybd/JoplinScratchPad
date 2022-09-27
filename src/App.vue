@@ -14,15 +14,45 @@
         </option>
       </select>
       <div id="menu-toggle" @click.prevent="settingsView = !settingsView">
-        <img v-if="!settingsView" src="./assets/settings-icon.png" alt="" />
-        <img v-else src="./assets/note-icon.png" alt="" />
+        <fa-icon icon="fa-solid fa-note-sticky" v-if="settingsView" />
+        <fa-icon icon="fa-solid fa-gear" v-else />
       </div>
     </div>
     <div
-      v-if="config.notebook && !settingsView && note !== null && tag !== null"
+      v-if="config.notebook && !settingsView && note !== null"
       id="editor"
       class="main-view"
     >
+      <div id="note-menu">
+        <div class="title-input" v-if="note.title !== null">
+          <input
+            type="text"
+            name="title"
+            id="title"
+            v-model="note.title"
+            @input="titleChanged = true"
+          />
+          <fa-icon
+            class="icon"
+            icon="fa-solid fa-floppy-disk"
+            v-if="titleChanged"
+            @click.prevent="updateTitleHandler()"
+          />
+        </div>
+        <div class="actions">
+          <fa-icon
+            v-if="synced"
+            icon="fa-solid fa-file-circle-plus"
+            @click.prevent="newNote()"
+          />
+          <fa-icon
+            class="rotating-icon"
+            v-else
+            icon="fa-solid fa-rotate"
+            style="color: #9a9a9a"
+          />
+        </div>
+      </div>
       <markdown-editor
         :value="note.content"
         height="auto"
@@ -44,7 +74,7 @@
       <div class="input-group">
         <label for="port">Port</label>
         <input
-          type="text"
+          type="number"
           name="port"
           id="conf-port"
           :value="config.port"
@@ -79,10 +109,11 @@ import {
 } from "./store/action.names";
 import {
   getScratchPad,
-  getScratchPadTag,
-  debounce,
   createOrUpdateScratchPad,
+  updateTitle,
 } from "./utils/joplinClient";
+
+import { debounce } from "./utils/common";
 
 export default {
   name: "App",
@@ -90,14 +121,28 @@ export default {
   computed: {
     ...mapGetters([CONFIG, NOTEBOOKS, CURRENT_NOTEBOOK_LABEL]),
   },
+  watch: {
+    currentNotebookLabel: {
+      deep: true,
+      handler: async function (val) {
+        if (val) {
+          this.note = await getScratchPad(this.config, val);
+        } else {
+          this.note = null;
+        }
+      },
+    },
+  },
   data() {
     return {
       settingsView: false,
       note: {
         id: null,
+        title: null,
         content: "",
       },
-      tag: null,
+      synced: true,
+      titleChanged: false,
       editorOptions: {
         markdownIt: {
           linkify: true,
@@ -112,7 +157,20 @@ export default {
     };
   },
   methods: {
-    syncScratch: debounce(async function (e) {
+    newNote() {
+      this.note = {
+        id: null,
+        title: null,
+        content: "",
+      };
+    },
+    async updateTitleHandler() {
+      this.synced = false;
+      await updateTitle(this.note.id, this.note.title, this.config);
+      this.titleChanged = false;
+      this.synced = true;
+    },
+    updateNote: debounce(async function (e) {
       // console.log(e);
       if (e !== this.note.content) {
         this.note = await createOrUpdateScratchPad(
@@ -121,14 +179,16 @@ export default {
           this.config,
           this.tag
         );
+        this.synced = true;
       }
     }, 3000),
+    syncScratch(e) {
+      this.synced = false;
+      this.updateNote(e);
+    },
     updateCOnfig(key, e) {
       this[SET_CONFIG]({ [key]: e.target.value });
       this[GET_NOTEBOOKS]().then(async () => {
-        if (this.tag == null) {
-          this.tag = await getScratchPadTag(this.config);
-        }
         this.note = await getScratchPad(
           this.config,
           this[CURRENT_NOTEBOOK_LABEL]
@@ -147,13 +207,7 @@ export default {
     ...mapActions([HYDRATE_CONFIG_FROM_LOCALSTORAGE, GET_NOTEBOOKS]),
   },
   mounted() {
-    this[HYDRATE_CONFIG_FROM_LOCALSTORAGE]().then(async () => {
-      this.tag = await getScratchPadTag(this.config);
-      this.note = await getScratchPad(
-        this.config,
-        this[CURRENT_NOTEBOOK_LABEL]
-      );
-    });
+    this[HYDRATE_CONFIG_FROM_LOCALSTORAGE]();
   },
 };
 </script>
@@ -181,6 +235,10 @@ export default {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+
+    & div:only-child {
+      margin-left: auto;
+    }
     #menu-toggle {
       img {
         width: 20px;
@@ -195,6 +253,39 @@ export default {
   }
 
   #editor {
+    display: flex;
+    flex-direction: column;
+
+    #note-menu {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+
+      & div:only-child {
+        margin-left: auto;
+      }
+
+      .title-input {
+        input {
+          margin-top: 5px;
+          margin-bottom: 5px;
+          height: 30px;
+          padding: 5px;
+        }
+
+        .icon {
+          margin-left: 5px;
+          margin-right: 5px;
+        }
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+    }
     .md-body {
       height: 100%;
       width: 100%;
@@ -226,5 +317,18 @@ export default {
       }
     }
   }
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.rotating-icon {
+  animation: rotation 2s infinite linear;
 }
 </style>

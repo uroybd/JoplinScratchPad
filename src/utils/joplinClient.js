@@ -1,4 +1,5 @@
 import axios from "axios";
+import { differenceByDays } from "./common";
 
 export function validateConfig(config) {
   if (!config.host || typeof config.host !== "string" || !config.host.length) {
@@ -42,20 +43,29 @@ export async function getScratchPad(config, nblabel) {
     config.apiToken
   }&query=tag:scratchpad notebook:${encodeURIComponent(
     nblabel
-  )}&type=note&fields=body,title,id`;
+  )}&type=note&fields=body,title,id,created_time&order_by=created_time&order_dir=DESC&limit=10`;
   const existing = await axios.get(query);
   // console.log(existing);
   if (existing && existing.data.items.length === 0) {
     return {
       id: null,
+      title: null,
       content: "",
     };
-  } else {
+  }
+  let entry = existing.data.items[0];
+  if (differenceByDays(new Date(), new Date(entry["created_time"])) == 0) {
     return {
-      id: existing.data.items[0].id,
-      content: existing.data.items[0].body,
+      id: entry.id,
+      title: entry.title,
+      content: entry.body,
     };
   }
+  return {
+    id: null,
+    title: null,
+    content: "",
+  };
 }
 
 export async function getScratchPadTag(config) {
@@ -86,11 +96,12 @@ export async function getScratchPadTag(config) {
   }
 }
 
-export async function createOrUpdateScratchPad(data, nblabel, config, tag) {
+export async function createOrUpdateScratchPad(data, nblabel, config) {
   // console.log(data, nblabel, config, tag);
   if (!validateConfig(config) || config.notebook == null) {
     return null;
   }
+  let tag = await getScratchPadTag(config);
   let url = `${getBaseURL(config)}/notes/${
     data.id !== null ? "" + data.id + "/" : ""
   }?token=${config.apiToken}`;
@@ -119,18 +130,15 @@ export async function createOrUpdateScratchPad(data, nblabel, config, tag) {
   );
   return {
     id: response.data.id,
+    title: response.data.title,
     content: response.data.body,
   };
 }
 
-export function debounce(fn, delay) {
-  var timeoutID = null;
-  return function () {
-    clearTimeout(timeoutID);
-    var args = arguments;
-    var that = this;
-    timeoutID = setTimeout(function () {
-      fn.apply(that, args);
-    }, delay);
-  };
+export async function updateTitle(id, title, config) {
+  if (!validateConfig(config) || config.notebook == null) {
+    return null;
+  }
+  let url = `${getBaseURL(config)}/notes/${id}/?token=${config.apiToken}`;
+  return axios.put(url, { title });
 }
