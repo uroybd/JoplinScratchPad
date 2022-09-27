@@ -1,6 +1,13 @@
 "use strict";
 
-import { app, protocol, BrowserWindow, Tray, ipcMain } from "electron";
+import {
+  app,
+  protocol,
+  BrowserWindow,
+  Tray,
+  ipcMain,
+  globalShortcut,
+} from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import path from "path";
@@ -56,7 +63,7 @@ async function createWindow() {
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
-    // if (!process.env.IS_TEST) win.webContents.openDevTools();
+    if (!process.env.IS_TEST) win.webContents.openDevTools();
   } else {
     createProtocol("app");
     // Load the index.html when not in development
@@ -66,6 +73,7 @@ async function createWindow() {
   tray.on("click", () => {
     toggleWindow(win, tray);
   });
+  return win;
 }
 
 // Quit when all windows are closed.
@@ -95,7 +103,10 @@ app.on("ready", async () => {
       console.error("Vue Devtools failed to install:", e.toString());
     }
   }
-  createWindow();
+  const win = await createWindow();
+  globalShortcut.register("Escape", () => {
+    win.hide();
+  });
 });
 
 // Exit cleanly on request from parent process in development mode.
@@ -112,3 +123,7 @@ if (isDevelopment) {
     });
   }
 }
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
