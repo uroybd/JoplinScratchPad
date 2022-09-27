@@ -1,18 +1,25 @@
 <template>
   <div id="app">
     <div id="menu-bar">
-      <select
-        v-if="notebooks.length"
-        name="Notebook"
-        id="notebook-select"
-        :value="config.notebook"
-        @input="(e) => updateNotebook(e)"
-      >
-        <option value="null">None</option>
-        <option v-for="opt in notebooks" :value="opt.id" :key="opt.id">
-          {{ opt.title }}
-        </option>
-      </select>
+      <div>
+        <select
+          v-if="notebooks.length"
+          name="Notebook"
+          id="notebook-select"
+          :value="config.notebook"
+          @input="(e) => updateNotebook(e)"
+        >
+          <option value="null">None</option>
+          <option v-for="opt in notebooks" :value="opt.id" :key="opt.id">
+            {{ opt.title }}
+          </option>
+        </select>
+        <fa-icon
+          style="margin-left: 5px"
+          icon="fa-solid fa-rotate"
+          @click.prevent="refreshNotebooks()"
+        />
+      </div>
       <div id="menu-toggle" @click.prevent="settingsView = !settingsView">
         <fa-icon icon="fa-solid fa-note-sticky" v-if="settingsView" />
         <fa-icon icon="fa-solid fa-gear" v-else />
@@ -68,7 +75,7 @@
           name="host"
           id="conf-host"
           :value="config.host"
-          @input="(e) => updateCOnfig('host', e)"
+          @input="(e) => updateConfig('host', e)"
         />
       </div>
       <div class="input-group">
@@ -78,7 +85,7 @@
           name="port"
           id="conf-port"
           :value="config.port"
-          @input="(e) => updateCOnfig('port', e)"
+          @input="(e) => updateConfig('port', e)"
         />
       </div>
       <div class="input-group">
@@ -88,7 +95,7 @@
           name="token"
           id="conf-host"
           :value="config.apiToken"
-          @input="(e) => updateCOnfig('apiToken', e)"
+          @input="(e) => updateConfig('apiToken', e)"
         />
       </div>
     </div>
@@ -122,6 +129,14 @@ export default {
     ...mapGetters([CONFIG, NOTEBOOKS, CURRENT_NOTEBOOK_LABEL]),
   },
   watch: {
+    config: {
+      deep: true,
+      handler: function (val) {
+        this[GET_NOTEBOOKS](val).then(async () => {
+          this.note = await getScratchPad(val, this[CURRENT_NOTEBOOK_LABEL]);
+        });
+      },
+    },
     currentNotebookLabel: {
       deep: true,
       handler: async function (val) {
@@ -157,6 +172,14 @@ export default {
     };
   },
   methods: {
+    refreshNotebooks() {
+      this[GET_NOTEBOOKS](this.config).then(async () => {
+        this.note = await getScratchPad(
+          this.config,
+          this[CURRENT_NOTEBOOK_LABEL]
+        );
+      });
+    },
     newNote() {
       this.note = {
         id: null,
@@ -186,13 +209,9 @@ export default {
       this.synced = false;
       this.updateNote(e);
     },
-    updateCOnfig(key, e) {
-      this[SET_CONFIG]({ [key]: e.target.value });
-      this[GET_NOTEBOOKS]().then(async () => {
-        this.note = await getScratchPad(
-          this.config,
-          this[CURRENT_NOTEBOOK_LABEL]
-        );
+    updateConfig(key, e) {
+      this[SET_CONFIG]({
+        [key]: key == "port" ? parseInt(e.target.value) : e.target.value,
       });
     },
     async updateNotebook(e) {

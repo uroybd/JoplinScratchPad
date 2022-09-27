@@ -41,8 +41,8 @@ export const store = new Vuex.Store({
     },
   },
   actions: {
-    async [GET_NOTEBOOKS]({ commit, getters }) {
-      const config = getters[CONFIG];
+    async [GET_NOTEBOOKS]({ commit, getters }, config = null) {
+      config = config || getters[CONFIG];
       if (validateConfig(config)) {
         try {
           const data = await getNotebooks(config);
