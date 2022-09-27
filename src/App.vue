@@ -68,6 +68,7 @@
       ></markdown-editor>
     </div>
     <div v-if="settingsView" id="settings" class="main-view">
+      <h4>Joplin API Configuration</h4>
       <div class="input-group">
         <label for="host">Host</label>
         <input
@@ -98,6 +99,29 @@
           @input="(e) => updateConfig('apiToken', e)"
         />
       </div>
+      <hr />
+      <h4>Shortcuts</h4>
+      <div class="input-group">
+        <label for="token">Toggle Scratchpad</label>
+        <div style="display: flex; align-items: center">
+          <input
+            type="text"
+            name="token"
+            id="conf-host"
+            :value="config.toggleOn"
+            ref="shortcut"
+            @input="shortcutChanged = true"
+          />
+          <fa-icon
+            class="icon"
+            style="margin-left: 10px"
+            icon="fa-solid fa-floppy-disk"
+            v-if="shortcutChanged"
+            @click.prevent="shortcutUpdateHandler()"
+          />
+        </div>
+      </div>
+      <p style="font-size: 0.8rem">(Please use Electron Style Shortcut.)</p>
     </div>
   </div>
 </template>
@@ -121,6 +145,7 @@ import {
 } from "./utils/joplinClient";
 
 import { debounce } from "./utils/common";
+import { ipcRenderer } from "electron";
 
 export default {
   name: "App",
@@ -129,6 +154,12 @@ export default {
     ...mapGetters([CONFIG, NOTEBOOKS, CURRENT_NOTEBOOK_LABEL]),
   },
   watch: {
+    "config.toggleOn": {
+      immediate: true,
+      handler(val, oldVal) {
+        ipcRenderer.send("change-toggle-shortcut", { val, oldVal });
+      },
+    },
     config: {
       deep: true,
       handler: function (val) {
@@ -158,6 +189,7 @@ export default {
       },
       synced: true,
       titleChanged: false,
+      shortcutChanged: false,
       editorOptions: {
         markdownIt: {
           linkify: true,
@@ -172,6 +204,14 @@ export default {
     };
   },
   methods: {
+    shortcutUpdateHandler() {
+      this.updateConfig("toggleOn", {
+        target: {
+          value: this.$refs.shortcut.value,
+        },
+      });
+      this.shortcutChanged = false;
+    },
     refreshNotebooks() {
       this[GET_NOTEBOOKS](this.config).then(async () => {
         this.note = await getScratchPad(
@@ -319,9 +359,13 @@ export default {
     display: flex;
     flex-direction: column;
 
-    .input-group {
+    hr {
       margin-top: 15px;
       margin-bottom: 15px;
+    }
+
+    .input-group {
+      margin-top: 15px;
 
       label,
       input {

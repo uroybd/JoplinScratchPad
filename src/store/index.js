@@ -17,6 +17,7 @@ export const store = new Vuex.Store({
       port: 41184,
       apiToken: null,
       notebook: null,
+      toggleOn: "F12",
     },
     notebooks: [],
   },

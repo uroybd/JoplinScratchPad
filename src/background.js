@@ -13,6 +13,7 @@ import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import path from "path";
 import positioner from "electron-traywindow-positioner";
 
+let win, tray;
 const isDevelopment = process.env.NODE_ENV !== "production";
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -28,9 +29,9 @@ function showWindow(trayWindow, tray) {
   trayWindow.show();
 }
 
-function toggleWindow(trayWindow, tray) {
-  if (trayWindow.isVisible()) return trayWindow.hide();
-  return showWindow(trayWindow, tray);
+export function toggleWindow() {
+  if (win.isVisible()) return win.hide();
+  return showWindow(win, tray);
 }
 
 async function createWindow() {
@@ -38,9 +39,9 @@ async function createWindow() {
   const iconPath = process.env.WEBPACK_DEV_SERVER_URL
     ? path.join(__dirname, "/tray.png")
     : path.join(__dirname, "/tray/tray.png");
-  const tray = new Tray(iconPath);
+  tray = new Tray(iconPath);
 
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 400,
     height: 600,
     frame: false,
@@ -126,4 +127,15 @@ if (isDevelopment) {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+});
+
+ipcMain.on("change-toggle-shortcut", (evt, { val, oldVal }) => {
+  if (oldVal) {
+    globalShortcut.unregister(oldVal);
+  }
+  if (val) {
+    globalShortcut.register(val, () => {
+      toggleWindow();
+    });
+  }
 });
