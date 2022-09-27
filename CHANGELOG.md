@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Notebook list refresh action
 ### Changed
-- Fix: Fixed a issue on configuration validation
+- Fix: Fixed an issue of configuration validation
 
 ## [1.1.0] - 2022-09-27
 ### Added
