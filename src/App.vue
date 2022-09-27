@@ -261,6 +261,7 @@ export default {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
+      margin-bottom: 5px;
 
       & div:only-child {
         margin-left: auto;
@@ -269,7 +270,6 @@ export default {
       .title-input {
         input {
           margin-top: 5px;
-          margin-bottom: 5px;
           height: 30px;
           padding: 5px;
         }
