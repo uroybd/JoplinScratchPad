@@ -28,10 +28,19 @@ export function getBaseURL(config) {
 }
 
 export async function getNotebooks(config) {
-  const { data } = await axios.get(
-    `${getBaseURL(config)}/folders?token=${config.apiToken}`
+  let page = 1;
+  let { data } = await axios.get(
+    `${getBaseURL(config)}/folders?token=${config.apiToken}&page=${page}`
   );
-  return data;
+  let notebooks = data.items;
+  while (data.has_more == true) {
+    page++;
+    data = await axios.get(
+      `${getBaseURL(config)}/folders?token=${config.apiToken}&page=${page}`
+    ).data;
+    notebooks = [...notebooks, data.item];
+  }
+  return notebooks;
 }
 
 export async function getScratchPad(config, nblabel) {
@@ -43,7 +52,7 @@ export async function getScratchPad(config, nblabel) {
     config.apiToken
   }&query=tag:scratchpad notebook:${encodeURIComponent(
     nblabel
-  )}&type=note&fields=body,title,id,created_time&order_by=created_time&order_dir=DESC&limit=10`;
+  )}&type=note&fields=body,title,id,created_time,is_todo&order_by=created_time&order_dir=DESC&limit=10`;
   const existing = await axios.get(query);
   // console.log(existing);
   if (existing && existing.data.items.length === 0) {
@@ -51,6 +60,7 @@ export async function getScratchPad(config, nblabel) {
       id: null,
       title: null,
       content: "",
+      is_todo: config.is_todo,
     };
   }
   let entry = existing.data.items[0];
@@ -59,12 +69,14 @@ export async function getScratchPad(config, nblabel) {
       id: entry.id,
       title: entry.title,
       content: entry.body,
+      is_todo: entry.is_todo,
     };
   }
   return {
     id: null,
     title: null,
     content: "",
+    is_todo: config.is_todo,
   };
 }
 
@@ -106,17 +118,21 @@ export async function createOrUpdateScratchPad(data, nblabel, config) {
     data.id !== null ? "" + data.id + "/" : ""
   }?token=${config.apiToken}`;
   let method = axios.put;
-  const payload = { body: data.content, parent_id: config.notebook };
+  const payload = {
+    body: data.content,
+    parent_id: config.notebook,
+    is_todo: data.is_todo,
+  };
   if (data.id == null) {
     method = axios.post;
-    payload.title = getNoteLabel();
+    payload.title = data.is_todo ? data.content : getNoteLabel();
   } else {
     try {
       await axios.get(url);
     } catch (e) {
       data.id = null;
       method = axios.post;
-      payload.title = getNoteLabel();
+      payload.title = data.is_todo ? data.content : getNoteLabel();
       url = `${getBaseURL(config)}/notes/${
         data.id !== null ? "" + data.id + "/" : ""
       }?token=${config.apiToken}`;
@@ -132,6 +148,7 @@ export async function createOrUpdateScratchPad(data, nblabel, config) {
     id: response.data.id,
     title: response.data.title,
     content: response.data.body,
+    is_todo: response.data.is_todo,
   };
 }
 
@@ -141,4 +158,12 @@ export async function updateTitle(id, title, config) {
   }
   let url = `${getBaseURL(config)}/notes/${id}/?token=${config.apiToken}`;
   return axios.put(url, { title });
+}
+
+export async function updateIsTodo(id, value, config) {
+  if (!validateConfig(config) || config.notebook == null) {
+    return null;
+  }
+  let url = `${getBaseURL(config)}/notes/${id}/?token=${config.apiToken}`;
+  return axios.put(url, { is_todo: value });
 }
