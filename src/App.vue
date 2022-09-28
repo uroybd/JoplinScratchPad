@@ -31,12 +31,23 @@
       class="main-view"
     >
       <div id="note-menu">
-        <div class="title-input" v-if="note.title !== null">
+        <div class="title-input">
+          <select
+            name="type"
+            id="todo"
+            :value="note.is_todo"
+            style="margin-right: 5px"
+            @input="updateTypeHandler"
+          >
+            <option :value="0">Note</option>
+            <option :value="1">TODO</option>
+          </select>
           <input
+            v-if="note.title !== null"
             type="text"
             name="title"
             id="title"
-            v-model="note.title"
+            v-model.number="note.title"
             @input="titleChanged = true"
           />
           <fa-icon
@@ -68,7 +79,7 @@
       ></markdown-editor>
     </div>
     <div v-if="settingsView" id="settings" class="main-view">
-      <h4>Joplin API Configuration</h4>
+      <h4>Joplin Configuration</h4>
       <div class="input-group">
         <label for="host">Host</label>
         <input
@@ -86,7 +97,7 @@
           name="port"
           id="conf-port"
           :value="config.port"
-          @input="(e) => updateConfig('port', e)"
+          @input="(e) => updateConfig('port', e, parseInt)"
         />
       </div>
       <div class="input-group">
@@ -98,6 +109,18 @@
           :value="config.apiToken"
           @input="(e) => updateConfig('apiToken', e)"
         />
+      </div>
+      <div class="input-group">
+        <label for="todo">Default Entry Type</label>
+        <select
+          name="type"
+          id="todo"
+          :value="config.is_todo"
+          @input="(e) => updateConfig('is_todo', e, parseInt)"
+        >
+          <option :value="0">Note</option>
+          <option :value="1">TODO</option>
+        </select>
       </div>
       <hr />
       <h4>Shortcuts</h4>
@@ -142,6 +165,7 @@ import {
   getScratchPad,
   createOrUpdateScratchPad,
   updateTitle,
+  updateIsTodo,
 } from "./utils/joplinClient";
 
 import { debounce } from "./utils/common";
@@ -204,6 +228,7 @@ export default {
     };
   },
   methods: {
+    updateIsTodo: updateIsTodo,
     shortcutUpdateHandler() {
       this.updateConfig("toggleOn", {
         target: {
@@ -225,7 +250,9 @@ export default {
         id: null,
         title: null,
         content: "",
+        is_todo: this.config.is_todo,
       };
+      this.synced = true;
     },
     async updateTitleHandler() {
       this.synced = false;
@@ -233,15 +260,28 @@ export default {
       this.titleChanged = false;
       this.synced = true;
     },
+    async updateTypeHandler(e) {
+      this.synced = false;
+      this.note.id &&
+        (await updateIsTodo(
+          this.note.id,
+          parseInt(e.target.value),
+          this.config
+        ));
+      this.note.is_todo = parseInt(e.target.value);
+      this.synced = true;
+    },
     updateNote: debounce(async function (e) {
       // console.log(e);
       if (e !== this.note.content) {
         this.note = await createOrUpdateScratchPad(
-          { id: this.note.id, content: e },
+          { id: this.note.id, content: e, is_todo: this.note.is_todo },
           this[CURRENT_NOTEBOOK_LABEL],
           this.config,
           this.tag
         );
+        this.synced = true;
+      } else {
         this.synced = true;
       }
     }, 3000),
@@ -249,10 +289,11 @@ export default {
       this.synced = false;
       this.updateNote(e);
     },
-    updateConfig(key, e) {
+    updateConfig(key, e, cast = (e) => e) {
       this[SET_CONFIG]({
-        [key]: key == "port" ? parseInt(e.target.value) : e.target.value,
+        [key]: cast(e.target.value),
       });
+      this.synced = true;
     },
     async updateNotebook(e) {
       this[SET_CONFIG]({ notebook: e.target.value });
@@ -327,7 +368,8 @@ export default {
       }
 
       .title-input {
-        input {
+        input,
+        select {
           margin-top: 5px;
           height: 30px;
           padding: 5px;

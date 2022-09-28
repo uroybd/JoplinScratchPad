@@ -18,6 +18,7 @@ export const store = new Vuex.Store({
       apiToken: null,
       notebook: null,
       toggleOn: "F12",
+      is_todo: 0,
     },
     notebooks: [],
   },
@@ -47,7 +48,7 @@ export const store = new Vuex.Store({
       if (validateConfig(config)) {
         try {
           const data = await getNotebooks(config);
-          commit(SET_NOTEBOOKS, data.items);
+          commit(SET_NOTEBOOKS, data);
         } catch (e) {
           // console.log(e);
         }
