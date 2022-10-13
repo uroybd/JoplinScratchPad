@@ -35,7 +35,7 @@ export function toggleWindow() {
     return win.hide();
   } else {
     globalShortcut.register("Escape", () => {
-      win.hide();
+      toggleWindow();
     });
     return showWindow(win, tray);
   }
