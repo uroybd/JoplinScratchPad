@@ -30,8 +30,15 @@ function showWindow(trayWindow, tray) {
 }
 
 export function toggleWindow() {
-  if (win.isVisible()) return win.hide();
-  return showWindow(win, tray);
+  if (win.isVisible()) {
+    globalShortcut.unregister("Escape");
+    return win.hide();
+  } else {
+    globalShortcut.register("Escape", () => {
+      win.hide();
+    });
+    return showWindow(win, tray);
+  }
 }
 
 async function createWindow() {
@@ -104,10 +111,7 @@ app.on("ready", async () => {
       console.error("Vue Devtools failed to install:", e.toString());
     }
   }
-  const win = await createWindow();
-  globalShortcut.register("Escape", () => {
-    win.hide();
-  });
+  win = await createWindow();
 });
 
 // Exit cleanly on request from parent process in development mode.

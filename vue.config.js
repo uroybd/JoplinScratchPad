@@ -8,6 +8,14 @@ module.exports = defineConfig({
       builderOptions: {
         appId: "me.utsob.joplinscratchpad",
         productName: "Joplin Scratchpad",
+        mac: {
+          target: [
+            {
+              target: "dmg",
+              arch: ["x64", "arm64"],
+            },
+          ],
+        },
         linux: {
           target: [
             {
