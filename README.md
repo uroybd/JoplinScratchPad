@@ -1,3 +1,6 @@
+### Warning!
+This project is working fine and will continue to do so for sometimes I guess. However, **I'm not maintaining it anymore**. If anyone wants to maintain it, please contact me so that I can transfer the ownership.
+
 # Joplin Scratchpad
 
 A scratchpad system tray app to quickly note in Joplin from MacOS and Linux system tray. PRs are welcome.
